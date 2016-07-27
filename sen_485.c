@@ -130,7 +130,7 @@ int sen_exec( unsigned char *cmd, int cmd_len, unsigned char *cmd_ret, int *cmd_
 			
 	return 0;	
 }
-
+/*
 int main()
 {	
 	unsigned char cmd[8] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x01, 0x84,0x0A}; 
@@ -141,6 +141,7 @@ int main()
 	sen_close();
 	return 0;
 }
+*/
 
 
 

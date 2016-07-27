@@ -7,6 +7,12 @@
 #include "wrap.h"
 #define MAXLINE 80
 #define SERV_PORT 8000
+#include "sensor.h"
+
+extern int sen_open();
+extern int sen_close();
+extern int sen_exec(unsigned char *cmd, int cmd_len, unsigned char *cmd_ret, int *cmd_ret_len);
+
 int main(int argc, char *argv[])
 {
 int i, maxi, maxfd, listenfd, connfd, sockfd;
@@ -14,7 +20,7 @@ int nready, client[FD_SETSIZE];
 /* FD_SETSIZE 默认为 1024 */
 ssize_t n;
 fd_set rset, allset;
-char buf[MAXLINE];
+unsigned char buf[MAXLINE];
 char str[INET_ADDRSTRLEN];
 /* #define INET_ADDRSTRLEN 16 */
 socklen_t cliaddr_len;
@@ -22,11 +28,10 @@ struct sockaddr_in
 cliaddr, servaddr;
 listenfd = Socket(AF_INET, SOCK_STREAM, 0);
 bzero(&servaddr, sizeof(servaddr));
-servaddr.sin_family
-= AF_INET;
-servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-servaddr.sin_port
-= htons(SERV_PORT);
+servaddr.sin_family= AF_INET;
+//servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+servaddr.sin_addr.s_addr = inet_addr("192.168.2.1");
+servaddr.sin_port= htons(SERV_PORT);
 Bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 Listen(listenfd, 20);
 /* 默认最大128 */
@@ -46,8 +51,6 @@ rset = allset;
 nready = select(maxfd+1, &rset, NULL, NULL, NULL);
 if (nready < 0)
 perr_exit("select error");
-139第12章 高并发服务器
-140
 if (FD_ISSET(listenfd, &rset)) { /* new client connection */
 cliaddr_len = sizeof(cliaddr);
 connfd = Accept(listenfd, (struct sockaddr *)&cliaddr, &cliaddr_len);
@@ -81,17 +84,27 @@ for (i = 0; i <= maxi; i++) {
 if ( (sockfd = client[i]) < 0)
 continue;
 if (FD_ISSET(sockfd, &rset)) {
-if ( (n = Read(sockfd, buf, MAXLINE)) == 0) {
+if ( (n = read(sockfd, buf, MAXLINE)) == 0) {
 /* 当client关闭链接时,服务器端也关闭对应链接 */
 Close(sockfd);
 FD_CLR(sockfd, &allset);
 /* 解除select监控此文件描述符 */
 client[i] = -1;
 } else {
-int j;
-for (j = 0; j < n; j++)
-buf[j] = toupper(buf[j]);
-Write(sockfd, buf, n);
+	unsigned char sendline[80];
+    int sendl = 0;
+ sen_open();
+ sen_exec(buf,8,sendline,&sendl); 
+ sen_close();
+
+ //send(fd,sendline,sendl,0);
+	write(sockfd, sendline, sendl);
+/*
+	int j;
+	for (j = 0; j < n; j++)
+	buf[j] = toupper(buf[j]);
+	Write(sockfd, buf, n);
+	*/
 }
 if (--nready == 0)
 break;

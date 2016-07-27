@@ -148,3 +148,5 @@ return n - 1;
 return -1;
 }
 *ptr = 0;
+return n;
+}
